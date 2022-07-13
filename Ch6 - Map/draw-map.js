@@ -101,8 +101,96 @@ async function drawMap() {
           if(typeof metricValue == 'undefined') return "#e2e6e9";
           return colorScale(metricValue);
         });
+  
+  const legendGroup = wrapper
+        .append('g')
+        .attr(
+          'transform',
+          `translate(${120}, ${
+            dimensions.width < 800
+              ? dimensions.boundedHeight - 30
+              : dimensions.boundedHeight * 0.5
+          })`
+        );
+  
+  const legendTitle = legendGroup
+    .append('text')
+    .attr('y', -23)
+    .attr('class','legend-title')
+    .text('Population growth');
+  
+  const legendByline = legendGroup.append("text")
+    .attr("y", -9)
+    .attr('class','legend-byline')
+    .text('Percent change in 2017');
 
+  const defs = wrapper.append('defs');
 
+  const legendGradientId = 'legend-gradient';
+
+  const gradient = defs
+    .append('linearGradient')
+    .attr('id', legendGradientId)
+    .selectAll('stop')
+    .data(colorScale.range())
+    .join('stop')
+    .attr('stop-color', d => d)
+    .attr(
+      'offset',
+      (d, i) =>
+        `${
+          (i * 100) / 2 
+        }%`
+    );
+  
+  const legendWidth = 120;
+  const legendHeigth = 16;
+  const legendGradient = legendGroup
+        .append('rect')
+        .attr('x', -legendWidth / 2)
+        .attr('height', legendHeigth)
+        .attr('width', legendWidth)
+        .style('fill', `url(#${legendGradientId})`);
+  
+  const legendValueRight = legendGroup
+        .append('text')
+        .attr('class', 'legend-value')
+        .attr('x', legendWidth / 2 + 10)
+        .attr('y', legendHeigth / 2)
+        .text(`${d3.format('.1f')(maxChange)}%`);
+
+  const legendValueLeft = legendGroup
+        .append('text')
+        .attr('class', 'legend-value')
+        .attr('x', -legendWidth / 2 - 10)
+        .attr('y', legendHeigth / 2)
+        .text(`${d3.format('.1f')(-maxChange)}%`)
+        .style('text-anchor', 'end');
+
+  navigator.geolocation.getCurrentPosition((myPosition) => {
+    const [x, y] = projection([
+      myPosition.coords.longitude,
+      myPosition.coords.latitude
+    ]);
+  
+    const myLocation = bounds
+      .append('circle')
+      .attr('class', 'my-loaction')
+      .attr('cx', x)
+      .attr('cy', y)
+      .attr('r', 0)
+      .transition()
+      .duration(500)
+      .attr('r', 10)
+      .attr('fill', 'red')
+      .transition()
+      .duration(500)
+      .attr('r', 5)
+      .attr('fill', 'cornflowerBlue');
+  
+  });
+
+  
 
 }
 drawMap()
