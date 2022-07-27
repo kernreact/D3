@@ -66,3 +66,18 @@ body {
 .precipitation-dot {
     opacity: 0.5;
 }
+
+.annotation-line {
+    stroke: #34495e;
+    opacity: 0.4;
+}
+
+.annotation-text {
+    fill: #34495e;
+    font-size: 00.7em;
+    dominant-baseline: middle;
+}
+
+svg {
+    overflow: visible;
+}
