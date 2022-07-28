@@ -105,6 +105,16 @@ async function drawChart() {
       .domain(precipitationTypes)
       .range(['#54a0FF', '#636e72', '#b2bec3']);
 
+  const temperatureColorScale = d3
+      .scaleSequential()
+      .domain(
+        d3.extent([
+          ...dataset.map(temperatureMaxAccessor),
+          ...dataset.map(temperatureMinAccessor)
+        ])
+      )
+      .interpolator(gradientColorScale);
+    
   // 6. Draw peripherals
 
   const peripherals = bounds.append('g');
@@ -286,11 +296,112 @@ async function drawChart() {
         .attr('x', labelCoordinates[0] + 25)
         .attr('y', labelCoordinates[1] + 16 * (index + 1))
         .text(precipitationType);
-        
+
     })
   }
   // 7. Set up interactions
 
+  const listenerCircle = bounds
+    .append('circle')
+    .attr('class', 'listener-circle')
+    .attr('r', dimensions.width / 2)
+    .on('mousemove', onMouseMove)
+    .on('mouseleave', onMoueLeave);
 
+  const tooltip = d3.select('#tooltip');
+  const tooltipLine = bounds.append('path').attr('class', 'tooltip-line');
+
+  
+  function onMouseMove(e) {
+    const [x, y] = d3.pointer(e);
+
+    const getAngleFromCoordinates = (x, y) => Math.atan2(y, x);
+    let angle = getAngleFromCoordinates(x, y) + Math.PI / 2;
+    if (angle < 0) angle = Math.PI * 2 + angle;
+
+    const tooltipArcGenerator = d3
+      .arc()
+      .innerRadius(0)
+      .outerRadius(dimensions.boundedRadius * 1.6)
+      .startAngle(angle - 0.015)
+      .endAngle(angle + 0.015);
+
+    tooltipLine.attr('d', tooltipArcGenerator()).style('opacity', 1);
+
+    const outerCoordinates = getCoordinatesForAngle(angle, 1.6);
+     
+    tooltip.style("opacity", 1)
+      .style("transform", `translate(calc(${
+        outerCoordinates[0] < - 50 ? "40px - 100" :
+        outerCoordinates[0] > 50 ? "-40px + 0" :
+        "-50"
+      }% + ${
+        outerCoordinates[0]
+          + dimensions.margin.top
+          + dimensions.boundedRadius
+      }px), calc(${
+        outerCoordinates[1] < - 50 ? "40px - 100" :
+        outerCoordinates[1] > 50 ? "-40px + 0" :
+        "-50"
+      }% + ${
+        outerCoordinates[1]
+          + dimensions.margin.top
+          + dimensions.boundedRadius
+      }px))`)
+
+    const date = angleScale.invert(angle);
+
+    const dateString = d3.timeFormat('%Y-%m-%d')(date);
+    const dataPoint = dataset.filter(d => d.date == dateString)[0];
+    if(!dataPoint) return;
+
+    tooltip.select("#tooltip-date")
+        .text(d3.timeFormat("%B %-d")(date))
+    tooltip.select("#tooltip-temperature-min")
+        .html(`${d3.format(".1f")(
+          temperatureMinAccessor(dataPoint))
+        }°F`)
+    tooltip.select("#tooltip-temperature-max")
+        .html(`${d3.format(".1f")(
+          temperatureMaxAccessor(dataPoint))
+        }°F`)
+    tooltip.select("#tooltip-uv")
+        .text(uvAccessor(dataPoint))
+    tooltip.select("#tooltip-cloud")
+        .text(cloudAccessor(dataPoint))
+    tooltip.select("#tooltip-precipitation")
+        .text(d3.format(".0%")(
+          precipitationProbabilityAccessor(dataPoint)
+        ))
+    tooltip.select("#tooltip-precipitation-type")
+        .text(precipitationTypeAccessor(dataPoint))
+    tooltip.select(".tooltip-precipitation-type")
+        .style("color", precipitationTypeAccessor(dataPoint)
+          ? precipitationTypeColorScale(
+              precipitationTypeAccessor(dataPoint)
+            )
+          : "#dadadd")
+    tooltip.select("#tooltip-temperature-min")
+        .style("color", temperatureColorScale(
+          temperatureMinAccessor(dataPoint)
+        ))
+    tooltip.select("#tooltip-temperature-max")
+        .style("color", temperatureColorScale(
+          temperatureMaxAccessor(dataPoint)
+        ))
+
+    tooltip
+          .select('#tooltip-temperature-min')
+          .style('color', temperatureColorScale(temperatureMinAccessor(dataPoint)));
+    tooltip
+        .select('#tooltip-temperature-max')
+        .style('color', temperatureColorScale(temperatureMaxAccessor(dataPoint)));
+
+  };
+
+  function onMoueLeave() {
+
+  };
+  
 }
 drawChart()
